@@ -15,14 +15,14 @@ using std::cout;
 int MAX_CMD_LEN = 1024;
 int MAX_HIST_SIZE = 10;
 
-int execute(string cmd, int foreground = 0) {
-    int pid;
-    pid = fork();
-    if
-    system(cmd.c_str());
-    if(foreground) wait();
+// int execute(string cmd, int foreground = 0) {
+//     int pid;
+//     pid = fork();
+//     if
+//     system(cmd.c_str());
+//     if(foreground) wait();
 
-}
+// }
 
 int main(int argc, char* argv[]) {
 
