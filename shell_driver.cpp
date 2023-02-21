@@ -7,10 +7,12 @@
 #include <unistd.h>
 #include <sys/wait.h>
 #include <sstream>
+#include <fstream>
 
 using std::vector;
 using std::string;
 using std::stringstream;
+using std::ofstream;
 using std::cout;
 using std::cin;
 using std::getline;
@@ -24,6 +26,10 @@ char W_DIR[1024]; //working directory
 char SHELL_CHAR = '$';
 vector<string> history;
 
+int execute(char *args[], int background);
+int process_cmd(string cmd);
+void audit(int signal);
+
 int execute(char *args[], int background = 0) {
     int pid;
 
@@ -33,6 +39,7 @@ int execute(char *args[], int background = 0) {
         return 1;
     } else if(pid != 0) {
         if (!background) waitpid(pid, NULL, 0);
+        else cout << "Process " << pid << " running in background.\n";
     } else {
         execvp(args[0], args); //would usually remove the {} but that would be kinda arcane looking here
     }
@@ -67,6 +74,9 @@ int process_cmd(string cmd) {
     args[i] = NULL;
 
     if(args[0] == NULL) return 0;
+    if(strcmp(args[0], "exit") == 0) exit(EXIT_SUCCESS);
+
+    if(strcmp(args[0], "audit") == 0) audit(0);
 
     if(strcmp(args[0], "cd") == 0) {
         if(i > 2) {
@@ -107,12 +117,20 @@ int process_cmd(string cmd) {
 
 }
 
+void audit(int signal) {
+    ofstream audit_log("audit.log");
+    for(unsigned int i = 0; i < history.size(); i += 1) {
+        audit_log << history[i] << '\n';
+    }
+    audit_log.close();
+    exit(EXIT_SUCCESS);
+}
+
 int main(int argc, char* argv[]) {
 
     int opt;
     while ((opt = getopt(argc, argv, "h:l:a:c:")) != -1) {
         switch (opt) {
-
             case 'h':
                 MAX_HIST_SIZE = atoi(optarg);
                 if(DEBUG_MODE) cout << "Option -h given with argument " << optarg << '\n';
@@ -133,13 +151,14 @@ int main(int argc, char* argv[]) {
                 if (optopt == 'h' || optopt == 's') {
                     fprintf(stderr, "Option -%c requires an argument.\n", optopt);
                 } 
-                return 1; //dont use abort here because comon user-error, core dump not useful
+                return 1;
             default:
                 abort();
         }
     }
 
     getcwd(W_DIR, 1024);
+    signal(SIGUSR1, audit);
 
     if(DEBUG_MODE) cout << "Initialized successfully\n";
 
@@ -147,7 +166,6 @@ int main(int argc, char* argv[]) {
         string cmd;
         cout << W_DIR << ' ' << SHELL_CHAR << ' '; 
         getline(cin, cmd);
-        if(cmd == "exit") break; //todo, make this use a cmp instead of jank
         process_cmd(cmd);
     }
 
