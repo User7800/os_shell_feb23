@@ -19,7 +19,13 @@ using std::getline;
 int MAX_CMD_LEN = 1024;
 int MAX_HIST_SIZE = 10;
 int MAX_ARGS = 100;
-string workind_dir;
+string W_DIR; //working directory
+
+int update_wdir() {
+    char buf[1024];
+    getcwd(buf, 1024);
+    W_DIR = buf;
+}
 
 int execute(string cmd, int background = 0) {
     stringstream tokenize(cmd);
@@ -53,6 +59,12 @@ int execute(string cmd, int background = 0) {
 }
 
 int flow(string cmd) {
+    if(cmd.find("cd") != string::npos) {
+        char *args[MAX_ARGS];
+
+    }
+    execute(cmd);
+    return 0;
 
 }
 
@@ -84,11 +96,15 @@ int main(int argc, char* argv[]) {
         }
     }
 
+    update_wdir();
+
+    if(DEBUG_MODE) cout << "Initialized successfully\n";
+
     while (true) {
         string cmd;
-        cout << "$ ";
+        cout << W_DIR << " $ "; 
         getline(cin, cmd);
-        if(cmd == "exit") break;
+        if(cmd == "exit") break; //todo, make this use a cmp instead of jank
         execute(cmd);
     }
 
