@@ -3,6 +3,7 @@
 #include <string>
 #include <vector>
 #include <cstring>
+#include <cerrno>
 #include <unistd.h>
 #include <sys/wait.h>
 #include <sstream>
@@ -19,51 +20,62 @@ using std::getline;
 int MAX_CMD_LEN = 1024;
 int MAX_HIST_SIZE = 10;
 int MAX_ARGS = 100;
-string W_DIR; //working directory
+char W_DIR[1024]; //working directory
 
-int update_wdir() {
-    char buf[1024];
-    getcwd(buf, 1024);
-    W_DIR = buf;
-}
-
-int execute(string cmd, int background = 0) {
-    stringstream tokenize(cmd);
-    string token;
-    int pid, i;
-    char *args[MAX_ARGS];
-
-    i = 0;
-    while(tokenize >> token) {
-        //todo: add check for MAX_ARGS here
-        args[i] = new char[token.length() + 1]; //yay, memory management :-(
-        strcpy(args[i], token.c_str());
-        i += 1;
-    }
-    args[i] = NULL;
+int execute(char *args[], int background = 0) {
+    int pid;
 
     pid = fork();
     if(pid == -1) {
+        
         fprintf(stderr, "Error in fork.\n");
-        abort();
+        return 1;
     } else if(pid != 0) {
         if (!background) waitpid(pid, NULL, 0);
     } else {
         execvp(args[0], args); //would usually remove the {} but that would be kinda arcane looking here
     }
 
-    for (int j = 0; j < i; j += 1) delete [] args[j]; //yay, memory management :-(
-
     return 0;
 
 }
 
-int flow(string cmd) {
-    if(cmd.find("cd") != string::npos) {
-        char *args[MAX_ARGS];
+int process_cmd(string cmd) {
+    stringstream tokenize(cmd);
+    string token;
+    int i = 0;
+    char *args[MAX_ARGS];
 
+    while(tokenize >> token) {
+        if(i > MAX_ARGS) {
+            fprintf(stderr, "shell: Too many arguments.\n");
+            return 1;
+        }
+        args[i] = new char[token.length() + 1]; //yay, memory management :(
+        strcpy(args[i], token.c_str());
+        i += 1;
     }
-    execute(cmd);
+    args[i] = NULL;
+
+    if(strcmp(args[0], "cd") == 0) {
+        if(i > 2) {
+            fprintf(stderr, "cd: Too many arguments.\n");
+            return 1;
+        }
+        if(i == 1) return 0; //cd into current dir, bash would go to ~ here
+
+        if(chdir(args[1])) {
+            perror("cd");
+            return 1;
+        }
+        getcwd(W_DIR, 1024);
+        return 0;
+    }
+    
+    execute(args);
+
+    for (int j = 0; j < i; j += 1) delete [] args[j]; //yay, memory management :(
+
     return 0;
 
 }
@@ -96,7 +108,7 @@ int main(int argc, char* argv[]) {
         }
     }
 
-    update_wdir();
+    getcwd(W_DIR, 1024);
 
     if(DEBUG_MODE) cout << "Initialized successfully\n";
 
@@ -105,7 +117,7 @@ int main(int argc, char* argv[]) {
         cout << W_DIR << " $ "; 
         getline(cin, cmd);
         if(cmd == "exit") break; //todo, make this use a cmp instead of jank
-        execute(cmd);
+        process_cmd(cmd);
     }
 
     return 0;
