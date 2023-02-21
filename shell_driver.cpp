@@ -17,9 +17,9 @@ using std::getline;
 
 #define DEBUG_MODE 0
 
-int MAX_CMD_LEN = 1024;
-int MAX_HIST_SIZE = 10;
-int MAX_ARGS = 100;
+unsigned int MAX_CMD_LEN = 1024;
+unsigned int MAX_HIST_SIZE = 10;
+unsigned int MAX_ARGS = 100;
 char W_DIR[1024]; //working directory
 char SHELL_CHAR = '$';
 vector<string> history;
@@ -43,15 +43,13 @@ int execute(char *args[], int background = 0) {
 int process_cmd(string cmd) {
     stringstream tokenize(cmd);
     string token;
-    int i = 0, background = 0;
+    unsigned int i = 0, background = 0, j;
     char *args[MAX_ARGS];
 
     history.push_back(cmd);
     if(history.size() > MAX_HIST_SIZE) {
         history.erase(history.begin());
     }
-
-    if(cmd == "") return 0;
 
     while(tokenize >> token) {
         if(i > MAX_ARGS) {
@@ -67,6 +65,8 @@ int process_cmd(string cmd) {
         i += 1;
     }
     args[i] = NULL;
+
+    if(args[0] == NULL) return 0;
 
     if(strcmp(args[0], "cd") == 0) {
         if(i > 2) {
@@ -101,7 +101,7 @@ int process_cmd(string cmd) {
 
     execute(args, background);
 
-    for (int j = 0; j < i; j += 1) delete [] args[j]; //yay, memory management :(
+    for (j = 0; j < i; j += 1) delete [] args[j]; //yay, memory management :(
 
     return 0;
 
