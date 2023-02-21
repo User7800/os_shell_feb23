@@ -9,14 +9,17 @@
 
 using std::vector;
 using std::string;
-using std::cout;
 using std::stringstream;
+using std::cout;
+using std::cin;
+using std::getline;
 
 #define DEBUG_MODE 1
 
 int MAX_CMD_LEN = 1024;
 int MAX_HIST_SIZE = 10;
 int MAX_ARGS = 100;
+string workind_dir;
 
 int execute(string cmd, int background = 0) {
     stringstream tokenize(cmd);
@@ -49,6 +52,10 @@ int execute(string cmd, int background = 0) {
 
 }
 
+int flow(string cmd) {
+
+}
+
 int main(int argc, char* argv[]) {
 
     int opt;
@@ -77,7 +84,13 @@ int main(int argc, char* argv[]) {
         }
     }
 
-
+    while (true) {
+        string cmd;
+        cout << "$ ";
+        getline(cin, cmd);
+        if(cmd == "exit") break;
+        execute(cmd);
+    }
 
     return 0;
 }
