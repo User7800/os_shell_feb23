@@ -162,8 +162,8 @@ int main(int argc, char* argv[]) {
 
     if(DEBUG_MODE) cout << "Initialized successfully\n";
 
+    string cmd;
     while (true) {
-        string cmd;
         cout << W_DIR << ' ' << SHELL_CHAR << ' '; 
         getline(cin, cmd);
         process_cmd(cmd);
