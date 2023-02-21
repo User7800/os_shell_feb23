@@ -29,15 +29,13 @@ int execute(char *args[], int background = 0) {
 
     pid = fork();
     if(pid == -1) {
-        
-        fprintf(stderr, "Error in fork.\n");
+        perror("fork");
         return 1;
     } else if(pid != 0) {
         if (!background) waitpid(pid, NULL, 0);
     } else {
         execvp(args[0], args); //would usually remove the {} but that would be kinda arcane looking here
     }
-
     return 0;
 
 }
@@ -45,7 +43,7 @@ int execute(char *args[], int background = 0) {
 int process_cmd(string cmd) {
     stringstream tokenize(cmd);
     string token;
-    int i = 0;
+    int i = 0, background = 0;
     char *args[MAX_ARGS];
 
     history.push_back(cmd);
@@ -53,10 +51,16 @@ int process_cmd(string cmd) {
         history.erase(history.begin());
     }
 
+    if(cmd == "") return 0;
+
     while(tokenize >> token) {
         if(i > MAX_ARGS) {
             fprintf(stderr, "shell: Too many arguments.\n");
             return 1;
+        }
+        if(token == "&") {
+            background = 1;
+            continue;
         }
         args[i] = new char[token.length() + 1]; //yay, memory management :(
         strcpy(args[i], token.c_str());
@@ -95,7 +99,7 @@ int process_cmd(string cmd) {
         return 0;
     }
 
-    execute(args);
+    execute(args, background);
 
     for (int j = 0; j < i; j += 1) delete [] args[j]; //yay, memory management :(
 
