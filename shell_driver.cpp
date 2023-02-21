@@ -15,12 +15,14 @@ using std::cout;
 using std::cin;
 using std::getline;
 
-#define DEBUG_MODE 1
+#define DEBUG_MODE 0
 
 int MAX_CMD_LEN = 1024;
 int MAX_HIST_SIZE = 10;
 int MAX_ARGS = 100;
 char W_DIR[1024]; //working directory
+char SHELL_CHAR = '$';
+vector<string> history;
 
 int execute(char *args[], int background = 0) {
     int pid;
@@ -45,6 +47,11 @@ int process_cmd(string cmd) {
     string token;
     int i = 0;
     char *args[MAX_ARGS];
+
+    history.push_back(cmd);
+    if(history.size() > MAX_HIST_SIZE) {
+        history.erase(history.begin());
+    }
 
     while(tokenize >> token) {
         if(i > MAX_ARGS) {
@@ -71,7 +78,23 @@ int process_cmd(string cmd) {
         getcwd(W_DIR, 1024);
         return 0;
     }
-    
+
+    if(strcmp(args[0], "history") == 0) {
+        for(i = 0; i < history.size(); i += 1) {
+            cout << history[i] << '\n';
+        }
+        return 0;
+    }
+
+    if(strcmp(args[0], "env") == 0) {
+        cout << "MAX_CMD_LEN = " << MAX_CMD_LEN << '\n';
+        cout << "MAX_HIST_SIZE = " << MAX_HIST_SIZE << '\n';
+        cout << "MAX_ARGS = " << MAX_ARGS << '\n';
+        cout << "W_DIR = " << W_DIR << '\n';
+        cout << "SHELL_CHAR = " << SHELL_CHAR << '\n';
+        return 0;
+    }
+
     execute(args);
 
     for (int j = 0; j < i; j += 1) delete [] args[j]; //yay, memory management :(
@@ -83,7 +106,7 @@ int process_cmd(string cmd) {
 int main(int argc, char* argv[]) {
 
     int opt;
-    while ((opt = getopt(argc, argv, "h:l:a:")) != -1) {
+    while ((opt = getopt(argc, argv, "h:l:a:c:")) != -1) {
         switch (opt) {
 
             case 'h':
@@ -97,6 +120,10 @@ int main(int argc, char* argv[]) {
             case 'a':
                 MAX_ARGS = atoi(optarg);
                 if(DEBUG_MODE) cout << "Option -a given with argument " << optarg << '\n';
+                break;
+            case 'c':
+                SHELL_CHAR = optarg[0];
+                if(DEBUG_MODE) cout << "Option -c given with argument " << optarg << '\n';
                 break;
             case '?':
                 if (optopt == 'h' || optopt == 's') {
@@ -114,7 +141,7 @@ int main(int argc, char* argv[]) {
 
     while (true) {
         string cmd;
-        cout << W_DIR << " $ "; 
+        cout << W_DIR << ' ' << SHELL_CHAR << ' '; 
         getline(cin, cmd);
         if(cmd == "exit") break; //todo, make this use a cmp instead of jank
         process_cmd(cmd);
