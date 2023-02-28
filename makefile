@@ -6,7 +6,7 @@
 # EXECUTABLE= and SOURCE=
 ###########################################
 CC=g++
-CFLAGS=-c -Wall #-Wall = all, warnings -c = ???
+CFLAGS=-c -Wall #-Wall = all, warnings -c = ???, "-g -O0" is for debug
 LDFLAGS=
 SOURCES=shell_driver.cpp
 OBJECTS=$(SOURCES:.cpp=.o)

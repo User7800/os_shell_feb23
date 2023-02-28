@@ -26,11 +26,11 @@ char W_DIR[1024]; //working directory
 char SHELL_CHAR = '$';
 vector<string> history;
 
-int execute(char *args[], int background);
+int execute(char *args[], int background, int redirect, string filename);
 int process_cmd(string cmd);
 void audit(int signal);
 
-int execute(char *args[], int background = 0) {
+int execute(char *args[], int background = 0, int redirect = 0, string filename = "") {
     int pid;
 
     pid = fork();
@@ -41,6 +41,10 @@ int execute(char *args[], int background = 0) {
         if (!background) waitpid(pid, NULL, 0);
         else cout << "Process " << pid << " running in background.\n";
     } else {
+        if(redirect == 1)
+            freopen(filename.c_str(), "w", stdout);
+        if(redirect == 2) 
+            freopen(filename.c_str(), "r", stdin); //who needs to clean when you have a sacrificial fork()
         execvp(args[0], args); //would usually remove the {} but that would be kinda arcane looking here
     }
     return 0;
@@ -49,8 +53,8 @@ int execute(char *args[], int background = 0) {
 
 int process_cmd(string cmd) {
     stringstream tokenize(cmd);
-    string token;
-    unsigned int i = 0, background = 0, j;
+    string token, filename;
+    unsigned int i = 0, background = 0, redirect = 0, j;
     char *args[MAX_ARGS];
 
     history.push_back(cmd);
@@ -65,6 +69,18 @@ int process_cmd(string cmd) {
         }
         if(token == "&") {
             background = 1;
+            continue;
+        }
+        if(token == ">") {
+            tokenize >> token;
+            filename = token;
+            redirect = 1;
+            continue;
+        }
+        if(token == "<") {
+            tokenize >> token;
+            filename = token;
+            redirect = 2;
             continue;
         }
         args[i] = new char[token.length() + 1]; //yay, memory management :(
@@ -109,7 +125,7 @@ int process_cmd(string cmd) {
         return 0;
     }
 
-    execute(args, background);
+    execute(args, background, redirect, filename);
 
     for (j = 0; j < i; j += 1) delete [] args[j]; //yay, memory management :(
 
@@ -160,6 +176,8 @@ int main(int argc, char* argv[]) {
     getcwd(W_DIR, 1024);
     signal(SIGUSR1, audit);
 
+    if(DEBUG_MODE) cout << "std_out = " << STDOUT_FILENO << '\n';
+    if(DEBUG_MODE) cout << "std_in = " << STDIN_FILENO << '\n';
     if(DEBUG_MODE) cout << "Initialized successfully\n";
 
     string cmd;
