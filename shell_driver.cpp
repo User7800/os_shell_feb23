@@ -54,7 +54,7 @@ int execute(char *args[], int background = 0, int redirect = 0, string filename 
 int process_cmd(string cmd) {
     stringstream tokenize(cmd);
     string token, filename;
-    unsigned int i = 0, background = 0, redirect = 0, j;
+    unsigned int i = 0, background = 0, redirect = 0, j, return_val;
     char *args[MAX_ARGS];
 
     history.push_back(cmd);
@@ -65,7 +65,8 @@ int process_cmd(string cmd) {
     while(tokenize >> token) {
         if(i > MAX_ARGS) {
             fprintf(stderr, "shell: Too many arguments.\n");
-            return 1;
+            return_val = 1;
+            goto END;
         }
         if(token == "&") {
             background = 1;
@@ -89,7 +90,11 @@ int process_cmd(string cmd) {
     }
     args[i] = NULL;
 
-    if(args[0] == NULL) return 0;
+    if(args[0] == NULL) {
+        return_val = 0;
+        goto END;
+    } 
+
     if(strcmp(args[0], "exit") == 0) exit(EXIT_SUCCESS);
 
     if(strcmp(args[0], "audit") == 0) audit(0);
@@ -97,23 +102,30 @@ int process_cmd(string cmd) {
     if(strcmp(args[0], "cd") == 0) {
         if(i > 2) {
             fprintf(stderr, "cd: Too many arguments.\n");
-            return 1;
+            return_val = 1;
+            goto END;
         }
-        if(i == 1) return 0; //cd into current dir, bash would go to ~ here
+        if(i == 1) {
+            return_val = 0;
+            goto END;
+        } //cd into current dir, bash would go to ~ here
 
         if(chdir(args[1])) {
             perror("cd");
-            return 1;
+            return_val = 1;
+            goto END;
         }
         getcwd(W_DIR, 1024);
-        return 0;
+        return_val = 0;
+        goto END;
     }
 
     if(strcmp(args[0], "history") == 0) {
         for(i = 0; i < history.size(); i += 1) {
             cout << history[i] << '\n';
         }
-        return 0;
+        return_val = 0;
+        goto END;
     }
 
     if(strcmp(args[0], "env") == 0) {
@@ -122,14 +134,17 @@ int process_cmd(string cmd) {
         cout << "MAX_ARGS = " << MAX_ARGS << '\n';
         cout << "W_DIR = " << W_DIR << '\n';
         cout << "SHELL_CHAR = " << SHELL_CHAR << '\n';
-        return 0;
+        return_val = 0;
+        goto END;
     }
 
     execute(args, background, redirect, filename);
 
+    END:
+
     for (j = 0; j < i; j += 1) delete [] args[j]; //yay, memory management :(
 
-    return 0;
+    return return_val;
 
 }
 
